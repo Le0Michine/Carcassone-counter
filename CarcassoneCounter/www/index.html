@@ -18,25 +18,25 @@
             var items = ['town','road','monastery','field'];
             var selectedItems = [];
             var playersList = [];
-			var maxPlayers = 6;
-			var colorsNames = ['red','green','grey','black','yellow','blue'];
-			var colors = [];			
-			colors['red'] = '#C1392B';
-			colors['green'] = '#16A085';
-			colors['grey'] = '#AAA';
-			colors['black'] = '#333';
-			colors['yellow'] = '#FFC107';
-			colors['blue'] = '#536DFE';
-			
+            var maxPlayers = 6;
+            var colorsNames = ['red','green','grey','black','yellow','blue'];
+            var colors = [];
+            colors['red'] = '#C1392B';
+            colors['green'] = '#16A085';
+            colors['grey'] = '#AAA';
+            colors['black'] = '#333';
+            colors['yellow'] = '#FFC107';
+            colors['blue'] = '#536DFE';
+
             selectedItems['town']=true;
             selectedItems['road']=true;
             selectedItems['monastery']=true;
             selectedItems['field']=true;
             var currentPlayerId;
             var gameOver = false;
-			var gameStarted = false;
+            var gameStarted = false;
             playersList = [{"id":"player1","name":"Лев","points":0,"history":[],"lastTurn":null,"color":colors[colorsNames[0]]},{"id":"player2","name":"Алена","points":0,"history":[],"lastTurn":null,"color":colors[colorsNames[1]]}];
-			
+
             onLoad();
              // Wait for Cordova to load
              //
@@ -48,42 +48,42 @@
              //
              function onDeviceReady() {
                  console.log('onDeviceReady');
-				 $.mobile.changePage("#playersPage");
-				 console.debug("current id: " + JSON.stringify(currentPlayerId));
-				 console.debug("players list: " + JSON.stringify(playersList));
+                 $.mobile.changePage("#playersPage");
+                 console.debug("current id: " + JSON.stringify(currentPlayerId));
+                 console.debug("players list: " + JSON.stringify(playersList));
              }
 
-			function newGame() {
-				playersList = [];
-				var gameOver = false;
-				updatePlayersList();
-				$('#newGame').hide();
-				$('#setupNewGame').fadeIn();
-				gameStarted = false;
-				//$('#addPlayerButton').fadeIn();
-			}
-			 
-			function startGame() {
-				if(playersList.length > 0) {
-					$('#setupNewGame').hide();
-					$('#newGame').fadeIn();
-					gameStarted = true;
-					resetAllCheckBox();					
-				}
-			}
-			
-			function addPlayer() {
-				var i = playersList.length;
-				var name = $("#un").val();
-				$("#un").val("");
-				var id = "player" + i;
-				playersList[i] = {"id":id,"name":name,"points":0,"history":[],"lastTurn":"","color":colors[colorsNames[i]]};
-				updatePlayersList();
-				if(playersList.length==maxPlayers) {
-					startGame();
-				}
-			}
-			
+            function newGame() {
+                playersList = [];
+                var gameOver = false;
+                updatePlayersList();
+                $('#newGame').hide();
+                $('#setupNewGame').fadeIn();
+                gameStarted = false;
+                //$('#addPlayerButton').fadeIn();
+            }
+
+            function startGame() {
+                if(playersList.length > 0) {
+                    $('#setupNewGame').hide();
+                    $('#newGame').fadeIn();
+                    gameStarted = true;
+                    resetAllCheckBox();
+                }
+            }
+
+            function addPlayer() {
+                var i = playersList.length;
+                var name = $("#un").val();
+                $("#un").val("");
+                var id = "player" + i;
+                playersList[i] = {"id":id,"name":name,"points":0,"history":[],"lastTurn":"","color":colors[colorsNames[i]]};
+                updatePlayersList();
+                if(playersList.length==maxPlayers) {
+                    startGame();
+                }
+            }
+
             function changeMode(){
                 if($('#gameovercheckbox').prop('checked')) {
                     $('.gameOver').fadeIn();
@@ -107,8 +107,8 @@
             }
 
             function calculate() {
-				var completedItems = [];
-				var i = 0;
+                var completedItems = [];
+                var i = 0;
                 var town = 0;
                 if (selectedItems['town']) {
                     var multiplier = 1;
@@ -116,13 +116,13 @@
                         multiplier = $('#withcathedral').prop('checked') ? 3 : 2;
                     }
                     town = multiplier*(parseInt(getTextboxValueAndClear('tilescount-t') || "0")+parseInt(getTextboxValueAndClear('shieldscount-t') || "0"));
-					if(town>0) completedItems[i++] = {"type":"town","points":town,"completed":!gameOver};
+                    if(town>0) completedItems[i++] = {"type":"town","points":town,"completed":!gameOver};
                 }
                 var road = 0;
                 if (selectedItems['road']) {
                     var multiplier = (!gameOver && $('#withlake').prop('checked')) ? 2 : 1;
                     road = multiplier*parseInt(getTextboxValueAndClear('tilescount-r') || "0");
-					if(road>0) completedItems[i++] = {"type":"road","points":road,"completed":!gameOver};
+                    if(road>0) completedItems[i++] = {"type":"road","points":road,"completed":!gameOver};
                 }
                 var monastery = 0;
                 if (selectedItems['monastery']) {
@@ -130,96 +130,96 @@
                     if (gameOver) {
                         monastery = parseInt(getTextboxValueAndClear('tilescount-m') || "0");
                     }
-					if(monastery>0) completedItems[i++] = {"type":"monastery","points":monastery,"completed":!gameOver};
+                    if(monastery>0) completedItems[i++] = {"type":"monastery","points":monastery,"completed":!gameOver};
                 }
                 var field = 0;
                 if (selectedItems['field'] && gameOver) {
                     field = 3*parseInt(getTextboxValueAndClear('townscount-f') || "0");
-					if(field>0) completedItems[i++] = {"type":"field","points":field,"completed":gameOver};
+                    if(field>0) completedItems[i++] = {"type":"field","points":field,"completed":gameOver};
                 }
                 var total = town + road + monastery + field;
                 //alert("Total: " + total);
-				console.log("Total points for player with id:'" + currentPlayerId + "': " + total);				
-				console.log("Completed items: " + JSON.stringify(completedItems));
+                console.log("Total points for player with id:'" + currentPlayerId + "': " + total);
+                console.log("Completed items: " + JSON.stringify(completedItems));
                 addPoints(total,completedItems);
-				$.mobile.changePage("#playersPage");
-				updatePlayersList();
-				resetCheckBox();
+                $.mobile.changePage("#playersPage");
+                updatePlayersList();
+                resetCheckBox();
             }
 
-			function resetCheckBox(){
-				console.log("Resetting checkboxes");
-				$("#itemsContent input[type='checkbox']").attr("checked",false).checkboxradio("refresh").trigger('create');
-			}
-			
-			function resetAllCheckBox(){
-				console.log("Resetting all checkboxes");
-				$("input[type='checkbox']").attr("checked",false).checkboxradio("refresh").trigger('create');
-			}
-			
-			function getTextboxValueAndClear(id) {
-				var value = $('#' + id).val();
-				$('#' + id).val("");
-				return value;
-			}
-			
+            function resetCheckBox(){
+                console.log("Resetting checkboxes");
+                $("#itemsContent input[type='checkbox']").attr("checked",false).checkboxradio("refresh").trigger('create');
+            }
+
+            function resetAllCheckBox(){
+                console.log("Resetting all checkboxes");
+                $("input[type='checkbox']").attr("checked",false).checkboxradio("refresh").trigger('create');
+            }
+
+            function getTextboxValueAndClear(id) {
+                var value = $('#' + id).val();
+                $('#' + id).val("");
+                return value;
+            }
+
             function updatePlayersList() {
-				$("#playersList").empty();
+                $("#playersList").empty();
                 var html = $("#playerTemplate").render(playersList);
                 $("#playersList").html(html);
                 $("#playersList").listview("refresh").trigger("create");
             }
 
             function selectPlayer(id) {
-				if (gameStarted) {
-					currentPlayerId = id;
-					$.mobile.changePage("#selectItemsPage");
-				}
+                if (gameStarted) {
+                    currentPlayerId = id;
+                    $.mobile.changePage("#selectItemsPage");
+                }
             }
 
             function addPoints(points, completedItems) {
                 var player = $.grep(playersList,function(item){return item.id===currentPlayerId;});
-				if(player.length == 0) {
-					console.error("Uneble to find player by Id:'" + currentPlayerId + "' in th list: " + JSON.stringify(playersList));
-				}
-				else {
-					console.log("Adding '" + points + "' points for player: " + currentPlayerId);
-					player[0].points += points;
-					player[0].history[player[0].history.length] = completedItems;
-					var lastTurn = "";
-					completedItems.forEach(function(item) {lastTurn += item.type + " (" + item.points + "), "});
-					lastTurn = lastTurn==="" ? "" : lastTurn.substring(0, lastTurn.length - 2) + '.';
-					player[0].lastTurn = lastTurn;
-				}				
+                if(player.length == 0) {
+                    console.error("Uneble to find player by Id:'" + currentPlayerId + "' in th list: " + JSON.stringify(playersList));
+                }
+                else {
+                    console.log("Adding '" + points + "' points for player: " + currentPlayerId);
+                    player[0].points += points;
+                    player[0].history[player[0].history.length] = completedItems;
+                    var lastTurn = "";
+                    completedItems.forEach(function(item) {lastTurn += item.type + " (" + item.points + "), "});
+                    lastTurn = lastTurn==="" ? "" : lastTurn.substring(0, lastTurn.length - 2) + '.';
+                    player[0].lastTurn = lastTurn;
+                }
             }
-			
-			function resetActivePageHeight() {
-				var aPage = $( "." + $.mobile.activePageClass ),
-				aPagePadT = parseFloat( aPage.css( "padding-top" ) ),
-				aPagePadB = parseFloat( aPage.css( "padding-bottom" ) ),
-				aPageBorderT = parseFloat( aPage.css( "border-top-width" ) ),
-				aPageBorderB = parseFloat( aPage.css( "border-bottom-width" ) );
-				aPage.css( "min-height", deviceInfo.height - aPagePadT - aPagePadB - aPageBorderT - aPageBorderB ).css("top","0px").css("padding","0px");
-			}
-			
-			//hide footer when input box is on focus
-			//$(document).on('focus', 'input, textarea', function() {
-				//$("div[data-role=footer]").hide();
-				//resetActivePageHeight();
-			//});
-			
-			//show footer when input is NOT on focus
-			//$(document).on('blur', 'input, textarea', function() {
-				//$("div[data-role=footer]").show();
-				//resetActivePageHeight();
-			//});
+
+            function resetActivePageHeight() {
+                var aPage = $( "." + $.mobile.activePageClass ),
+                aPagePadT = parseFloat( aPage.css( "padding-top" ) ),
+                aPagePadB = parseFloat( aPage.css( "padding-bottom" ) ),
+                aPageBorderT = parseFloat( aPage.css( "border-top-width" ) ),
+                aPageBorderB = parseFloat( aPage.css( "border-bottom-width" ) );
+                aPage.css( "min-height", deviceInfo.height - aPagePadT - aPagePadB - aPageBorderT - aPageBorderB ).css("top","0px").css("padding","0px");
+            }
+
+            //hide footer when input box is on focus
+            //$(document).on('focus', 'input, textarea', function() {
+                //$("div[data-role=footer]").hide();
+                //resetActivePageHeight();
+            //});
+
+            //show footer when input is NOT on focus
+            //$(document).on('blur', 'input, textarea', function() {
+                //$("div[data-role=footer]").show();
+                //resetActivePageHeight();
+            //});
         </script>
 
         <title>Carcassone Counter</title>
     </head>
     <body>
-	
-		<div data-role="page" id="playersPage">
+
+        <div data-role="page" id="playersPage">
             <div data-role="header" data-position="fixed" id="headerPlayersPage" >
                 <h1>Players</h1>
             </div>
@@ -230,64 +230,64 @@
                 <ul data-role="listview" data-devider-theme="a" id="playersList">
                     
                 </ul>
-				<script id="playerTemplate" type="text/x-jsrender">
+                <script id="playerTemplate" type="text/x-jsrender">
                     <li><a  href="#" onclick="selectPlayer('{{:id}}')" style="border-bottom-color:#2C3E50;border-top-color:#2C3E50;border:2px 0px 2px 0px; background-color:{{:color}}">
                         <div style="float:left">
                             <span style="font-weight:bold">{{:name}}</span><br/>
                             <span style="font-style:italic; font-family:Arial">{{:points}}</span>
                         </div>
-						<div style="float:right">
-							<span style="font-weight:bold">Last turn:</span><br/>
+                        <div style="float:right">
+                            <span style="font-weight:bold">Last turn:</span><br/>
                             <span style="font-style:italic; font-family:Arial">{{:lastTurn}}</span>
-						</div>
+                        </div>
                     </a></li>
                 </script>
             </div>
-			<div data-role="footer" data-position="fixed">                
-				<div id="newGame" style="display:none">
-					<a href="#conformNewGamePopup"  data-rel="popup" style="display:block;margin:6px 3px" data-inline="false" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-b ui-corner-all ui-shadow">New game</a>          
-				</div>
-				
-				<div data-role="popup" id="conformNewGamePopup" data-overlay-theme="a data-theme="a" data-dismissible="false">
-				    <div role="main" class="ui-content">
-				        <span>Are you sure you want to create new game?</span>
-						<fieldset class="ui-grid-a">
-							<div class="ui-block-a">
-						        <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-b" data-rel="back">No</a>
-							</div>
-							<div class="ui-block-b">
-						        <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-b" data-rel="back" data-transition="flow" onclick="newGame()">Yes</a>
-							</div>
-						</fieldset>
-				    </div>
-				</div>
+            <div data-role="footer" data-position="fixed">
+                <div id="newGame" style="display:none">
+                    <a href="#conformNewGamePopup"  data-rel="popup" style="display:block;margin:6px 3px" data-inline="false" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-b ui-corner-all ui-shadow">New game</a>
+                </div>
+
+                <div data-role="popup" id="conformNewGamePopup" data-overlay-theme="a" data-theme="a" data-dismissible="false">
+                    <div role="main" class="ui-content">
+                        <span>Are you sure you want to create new game?</span>
+                        <fieldset class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-b" data-rel="back">No</a>
+                            </div>
+                            <div class="ui-block-b">
+                                <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-b" data-rel="back" data-transition="flow" onclick="newGame()">Yes</a>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
                 <div id="setupNewGame">
-					<fieldset class="ui-grid-a">
+                    <fieldset class="ui-grid-a">
                         <div class="ui-block-a">
-							<a href="#addPlayerPopup" id="addPlayerButton" data-rel="popup" style="display:block" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-e ui-corner-all">Add player</a>
-						</div>
-						<div class="ui-block-b">
-							<button data-theme="g" onclick="startGame()" style="display:block;margin:6px 3px 6px 3px">Start Game</button>					
-						</div>
-						
-						<div data-role="popup" id="addPlayerPopup" data-theme="a" "data-overlay-theme="c" style="background-color:#DDD" class="ui-corner-all">
-							<div style="padding:0px 10px;">
-							    <label style="font-weight:bold;">Player name:
-							    <input type="text" name="user" id="un" value="" placeholder="player name"></label>
-							    <a href="#" data-rel="back" type="submit" onclick="addPlayer()" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Add</a>
-							</div>
-						</div>
-					</fieldset>
+                            <a href="#addPlayerPopup" id="addPlayerButton" data-rel="popup" style="display:block" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-e ui-corner-all">Add player</a>
+                        </div>
+                        <div class="ui-block-b">
+                            <button data-theme="g" onclick="startGame()" style="display:block;margin:6px 3px 6px 3px">Start Game</button>
+                        </div>
+
+                        <div data-role="popup" id="addPlayerPopup" data-theme="a" "data-overlay-theme="c" style="background-color:#DDD" class="ui-corner-all">
+                            <div style="padding:0px 10px;">
+                                <label style="font-weight:bold;">Player name:
+                                <input type="text" name="user" id="un" value="" placeholder="player name"></label>
+                                <a href="#" data-rel="back" type="submit" onclick="addPlayer()" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Add</a>
+                            </div>
+                        </div>
+                    </fieldset>
                 </div>
             </div>
         </div>
-		
+
         <div data-role="page" id="selectItemsPage">
             <script type="text/javascript" charset="utf-8">
-            	$('#selectItemsPage').bind('pageinit', function() {items.forEach(toggleItem);})
+                $('#selectItemsPage').bind('pageinit', function() {items.forEach(toggleItem);})
             </script>
             <div data-role="header" data-position="fixed" id="header">
-            	<h1>Select items</h1>
+                <h1>Select items</h1>
             </div>
             <div data-role="content" data-theme="f" id="itemsContent">
                 <ul data-role="listview" data-devider-theme="a">
