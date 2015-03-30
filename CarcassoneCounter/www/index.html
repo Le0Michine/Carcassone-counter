@@ -19,14 +19,13 @@
             var selectedItems = [];
             var playersList = [];
             var maxPlayers = 6;
-            var colorsNames = ['red','green','grey','black','yellow','blue'];
-            var colors = [];
-            colors['red'] = '#C1392B';
-            colors['green'] = '#16A085';
-            colors['grey'] = '#AAA';
-            colors['black'] = '#333';
-            colors['yellow'] = '#FFC107';
-            colors['blue'] = '#536DFE';
+            var colors = [
+                {"name":"red","code":"#C1392B"},
+                {"name":"green","code":"#16A085"},
+                {"name":"grey","code":"#AAA"},
+                {"name":"black","code":"#333"},
+                {"name":"yellow","code":"#FFC107"},
+                {"name":"blue","code":"#536DFE"}];
 
             selectedItems['town']=true;
             selectedItems['road']=true;
@@ -35,7 +34,6 @@
             var currentPlayerId;
             var gameOver = false;
             var gameStarted = false;
-            playersList = [{"id":"player1","name":"Лев","points":0,"history":[],"lastTurn":null,"color":colors[colorsNames[0]]},{"id":"player2","name":"Алена","points":0,"history":[],"lastTurn":null,"color":colors[colorsNames[1]]}];
 
             onLoad();
              // Wait for Cordova to load
@@ -68,19 +66,28 @@
                     $('#setupNewGame').hide();
                     $('#newGame').fadeIn();
                     gameStarted = true;
+                    updatePlayersList();
                     resetAllCheckBox();
                 }
             }
 
             function addPlayer() {
-                var i = playersList.length;
-                var name = $("#un").val();
-                $("#un").val("");
-                var id = "player" + i;
-                playersList[i] = {"id":id,"name":name,"points":0,"history":[],"lastTurn":"","color":colors[colorsNames[i]]};
-                updatePlayersList();
-                if(playersList.length==maxPlayers) {
-                    startGame();
+                if(playersList.length!=maxPlayers) {
+                    var i = playersList.length;
+                    var name = $("#un").val();
+                    $("#un").val("");
+                    var id = "player" + (i + 1);
+                    var usedColors = [];
+                    playersList.forEach(function(player) {usedColors[usedColors.length] = player.color;});
+                    console.debug('Used colors: ' + JSON.stringify(usedColors));
+                    var availableColors = $.grep(colors, function (color) {
+                        return $.inArray(color, usedColors) == -1;
+                    });
+                    console.debug('Available colors: ' + JSON.stringify(availableColors));
+                    var colorIndex = Math.floor(Math.random() * availableColors.length);
+                    playersList[i] = {"id":id,"name":name==="" ? id.replace("p","P") : name,"points":0,"history":[],"lastTurn":"","color":availableColors[colorIndex]};
+                    updatePlayersList();
+//                    startGame();
                 }
             }
 
@@ -138,7 +145,6 @@
                     if(field>0) completedItems[i++] = {"type":"field","points":field,"completed":gameOver};
                 }
                 var total = town + road + monastery + field;
-                //alert("Total: " + total);
                 console.log("Total points for player with id:'" + currentPlayerId + "': " + total);
                 console.log("Completed items: " + JSON.stringify(completedItems));
                 addPoints(total,completedItems);
@@ -164,17 +170,60 @@
             }
 
             function updatePlayersList() {
+                $.views.helpers({
+                    gameOver: gameOver,
+                    gameStarted: gameStarted
+                });
                 $("#playersList").empty();
                 var html = $("#playerTemplate").render(playersList);
                 $("#playersList").html(html);
                 $("#playersList").listview("refresh").trigger("create");
             }
 
+            function doNothing() {
+                console.log("Do nothing...");
+            }
+
             function selectPlayer(id) {
+                currentPlayerId = id;
                 if (gameStarted) {
-                    currentPlayerId = id;
                     $.mobile.changePage("#selectItemsPage");
                 }
+                else {
+                    doNothing();
+                }
+            }
+
+            function clickRemove(id) {
+                playersList = $.grep(playersList, function(player) {return player.id != id;});
+                updatePlayersList();
+            }
+
+            function selectColor(colorName) {
+                var player = $.grep(playersList,function(item){return item.id===currentPlayerId;});
+                var playerWithSameColor = $.grep(playersList,function(item){return item.color.name===colorName;});
+                var colorWithCode = $.grep(colors, function (color) {return color.name === colorName;})
+                if(playerWithSameColor.length == 0) {
+                    player[0].color = colorWithCode[0];
+                }
+                else {
+                    var tmpColor = player[0].color;
+                    player[0].color = playerWithSameColor[0].color;
+                    playerWithSameColor[0].color = tmpColor;
+                }
+                updatePlayersList();
+            }
+
+            function clickSelectColor(id) {
+                currentPlayerId = id;
+                var player = $.grep(playersList,function(item){return item.id===currentPlayerId;});
+                var renderColors = colors.slice();
+                renderColors = $.grep(renderColors,function(color){return color != player[0].color;});
+                $('#colorPopup').popup('open');
+                var html = $("#colorTemplate").render(renderColors);
+                $("#colorList").html(html);
+                $("#colorList").listview("refresh").trigger("create");
+                currentPlayerId = id;
             }
 
             function addPoints(points, completedItems) {
@@ -191,15 +240,6 @@
                     lastTurn = lastTurn==="" ? "" : lastTurn.substring(0, lastTurn.length - 2) + '.';
                     player[0].lastTurn = lastTurn;
                 }
-            }
-
-            function resetActivePageHeight() {
-                var aPage = $( "." + $.mobile.activePageClass ),
-                aPagePadT = parseFloat( aPage.css( "padding-top" ) ),
-                aPagePadB = parseFloat( aPage.css( "padding-bottom" ) ),
-                aPageBorderT = parseFloat( aPage.css( "border-top-width" ) ),
-                aPageBorderB = parseFloat( aPage.css( "border-bottom-width" ) );
-                aPage.css( "min-height", deviceInfo.height - aPagePadT - aPagePadB - aPageBorderT - aPageBorderB ).css("top","0px").css("padding","0px");
             }
 
             //hide footer when input box is on focus
@@ -231,17 +271,43 @@
                     
                 </ul>
                 <script id="playerTemplate" type="text/x-jsrender">
-                    <li><a  href="#" onclick="selectPlayer('{{:id}}')" style="border-bottom-color:#2C3E50;border-top-color:#2C3E50;border:2px 0px 2px 0px; background-color:{{:color}}">
+                    <li><a  href="#" onclick="selectPlayer('{{:id}}')" style="border-bottom-color:#2C3E50;border-top-color:#2C3E50;border:2px 0px 2px 0px; background-color:{{:color.code}}">
                         <div style="float:left">
                             <span style="font-weight:bold">{{:name}}</span><br/>
                             <span style="font-style:italic; font-family:Arial">{{:points}}</span>
                         </div>
+                        {{include tmpl='#conditionalTemplate'/}}
+                </script>
+
+                <script id="conditionalTemplate" type="text/x-jsrender">
+                    {{if ~gameStarted tmpl='#lastTurnTemplate'}}
+                    {{else tmpl='#editTemplate'}}
+                    {{/if}}
+                </script>
+
+                <script id="lastTurnTemplate" type="text/x-jsrender">
                         <div style="float:right">
                             <span style="font-weight:bold">Last turn:</span><br/>
                             <span style="font-style:italic; font-family:Arial">{{:lastTurn}}</span>
                         </div>
+                </script>
+
+                <script id="editTemplate" type="text/x-jsrender">
+                        <div data-role="controlgroup" data-type="horizontal" style="float:right;">
+                            <button data-icon="flat-settings" data-theme="a" style="border:1px 1px; border-color:#BBB" data-iconpos="notext" onclick="clickSelectColor('{{:id}}')">Set color</button>
+                            <button data-icon="flat-cross" data-iconpos="notext" style="border:1px 1px; border-color:#BBB" data-theme="a" onclick="clickRemove('{{:id}}')">Remove player</button>
+                        </div>
                     </a></li>
                 </script>
+
+                <div data-role="popup" id="colorPopup" data-theme="c">
+                    <ul data-role="listview" data-inset="true" data-theme="a" id="colorList" style="min-width:210px;">
+                        <li data-role="list-divider">Choose a color</li>
+                    </ul>
+                        <script id="colorTemplate" type="text/x-jsrender">
+                            <li><a href="#" data-rel="back" data-icon="flat-cross" onclick="selectColor('{{:name}}')" style="background-color:{{:code}}">{{:name}}</a></li>
+                        </script>
+                </div>
             </div>
             <div data-role="footer" data-position="fixed">
                 <div id="newGame" style="display:none">
@@ -269,15 +335,14 @@
                         <div class="ui-block-b">
                             <button data-theme="g" onclick="startGame()" style="display:block;margin:6px 3px 6px 3px">Start Game</button>
                         </div>
-
-                        <div data-role="popup" id="addPlayerPopup" data-theme="a" "data-overlay-theme="c" style="background-color:#DDD" class="ui-corner-all">
-                            <div style="padding:0px 10px;">
-                                <label style="font-weight:bold;">Player name:
-                                <input type="text" name="user" id="un" value="" placeholder="player name"></label>
-                                <a href="#" data-rel="back" type="submit" onclick="addPlayer()" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Add</a>
-                            </div>
-                        </div>
                     </fieldset>
+
+                    <div data-role="popup" id="addPlayerPopup" data-theme="a" data-overlay-theme="c" style="background-color:#DDD" class="ui-corner-all">
+                        <div style="padding:0px 10px;">
+                            <label style="font-weight:bold;">Player name:<input type="text" name="user" id="un" value="" placeholder="player name"></label>
+                            <a href="#" data-rel="back" type="submit" onclick="addPlayer()" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Add</a>
+                        </div>
+                    </div><!--/popup-->
                 </div>
             </div>
         </div>
