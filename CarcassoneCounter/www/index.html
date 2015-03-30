@@ -1,41 +1,347 @@
 <!DOCTYPE html>
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one
-    or more contributor license agreements.  See the NOTICE file
-    distributed with this work for additional information
-    regarding copyright ownership.  The ASF licenses this file
-    to you under the Apache License, Version 2.0 (the
-    "License"); you may not use this file except in compliance
-    with the License.  You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing,
-    software distributed under the License is distributed on an
-    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-     KIND, either express or implied.  See the License for the
-    specific language governing permissions and limitations
-    under the License.
--->
 <html>
     <head>
         <meta charset="utf-8" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
-        <link rel="stylesheet" type="text/css" href="css/index.css" />
-        <title>Hello World</title>
+        <!--<link rel="stylesheet" type="text/css" href="css/index.css" />-->
+        <!--<link rel="stylesheet" type="text/css" href="lib/jquery.mobile-1.4.5/jquery.mobile-1.4.5.css" />-->
+        <link rel="stylesheet" type="text/css" href="lib/jquery-mobile-flat-ui-theme/jquery.mobile.flatui.css" />
+
+        <script type="text/javascript" src="lib/jquery-2.1.3.js"></script>
+        <script type="text/javascript" src="lib/jquery.mobile-1.4.5/jquery.mobile-1.4.5.js"></script>
+        <script type="text/javascript" src="lib/jquery.jsonp.js"></script>
+        <script type="text/javascript" src="lib/jsrender/jsrender.js"></script>
+
+        <script type="text/javascript">
+            var items = ['town','road','monastery','field'];
+            var selectedItems = [];
+            var playersList = [];
+			var maxPlayers = 6;
+			var colorsNames = ['red','green','grey','black','yellow','blue'];
+			var colors = [];			
+			colors['red'] = '#C1392B';
+			colors['green'] = '#16A085';
+			colors['grey'] = '#AAA';
+			colors['black'] = '#333';
+			colors['yellow'] = '#FFC107';
+			colors['blue'] = '#536DFE';
+			
+            selectedItems['town']=true;
+            selectedItems['road']=true;
+            selectedItems['monastery']=true;
+            selectedItems['field']=true;
+            var currentPlayerId;
+            var gameOver = false;
+			var gameStarted = false;
+            playersList = [{"id":"player1","name":"Лев","points":0,"history":[],"lastTurn":null,"color":colors[colorsNames[0]]},{"id":"player2","name":"Алена","points":0,"history":[],"lastTurn":null,"color":colors[colorsNames[1]]}];
+			
+            onLoad();
+             // Wait for Cordova to load
+             //
+             function onLoad() {
+                document.addEventListener("deviceready", onDeviceReady, false);                
+             }
+
+             // Cordova is ready
+             //
+             function onDeviceReady() {
+                 console.log('onDeviceReady');
+				 $.mobile.changePage("#playersPage");
+				 console.debug("current id: " + JSON.stringify(currentPlayerId));
+				 console.debug("players list: " + JSON.stringify(playersList));
+             }
+
+			function newGame() {
+				playersList = [];
+				var gameOver = false;
+				updatePlayersList();
+				$('#newGame').hide();
+				$('#setupNewGame').fadeIn();
+				gameStarted = false;
+				//$('#addPlayerButton').fadeIn();
+			}
+			 
+			function startGame() {
+				if(playersList.length > 0) {
+					$('#setupNewGame').hide();
+					$('#newGame').fadeIn();
+					gameStarted = true;
+					resetAllCheckBox();					
+				}
+			}
+			
+			function addPlayer() {
+				var i = playersList.length;
+				var name = $("#un").val();
+				$("#un").val("");
+				var id = "player" + i;
+				playersList[i] = {"id":id,"name":name,"points":0,"history":[],"lastTurn":"","color":colors[colorsNames[i]]};
+				updatePlayersList();
+				if(playersList.length==maxPlayers) {
+					startGame();
+				}
+			}
+			
+            function changeMode(){
+                if($('#gameovercheckbox').prop('checked')) {
+                    $('.gameOver').fadeIn();
+                    $('.gameInProgress').hide();
+                    gameOver = true;
+                } else {
+                    $('.gameOver').hide();
+                    $('.gameInProgress').fadeIn();
+                    gameOver = false;
+                }
+            }
+
+            function toggleItem(itemname) {
+                selectedItems[itemname] = !selectedItems[itemname];
+                if(selectedItems[itemname]) {
+                    $('.' + itemname).fadeIn();
+                }
+                else {
+                    $('.' + itemname).hide();
+                }
+            }
+
+            function calculate() {
+				var completedItems = [];
+				var i = 0;
+                var town = 0;
+                if (selectedItems['town']) {
+                    var multiplier = 1;
+                    if(!gameOver) {
+                        multiplier = $('#withcathedral').prop('checked') ? 3 : 2;
+                    }
+                    town = multiplier*(parseInt(getTextboxValueAndClear('tilescount-t') || "0")+parseInt(getTextboxValueAndClear('shieldscount-t') || "0"));
+					if(town>0) completedItems[i++] = {"type":"town","points":town,"completed":!gameOver};
+                }
+                var road = 0;
+                if (selectedItems['road']) {
+                    var multiplier = (!gameOver && $('#withlake').prop('checked')) ? 2 : 1;
+                    road = multiplier*parseInt(getTextboxValueAndClear('tilescount-r') || "0");
+					if(road>0) completedItems[i++] = {"type":"road","points":road,"completed":!gameOver};
+                }
+                var monastery = 0;
+                if (selectedItems['monastery']) {
+                    monastery = $('#completed-m').prop('checked') ? 9 : 0;
+                    if (gameOver) {
+                        monastery = parseInt(getTextboxValueAndClear('tilescount-m') || "0");
+                    }
+					if(monastery>0) completedItems[i++] = {"type":"monastery","points":monastery,"completed":!gameOver};
+                }
+                var field = 0;
+                if (selectedItems['field'] && gameOver) {
+                    field = 3*parseInt(getTextboxValueAndClear('townscount-f') || "0");
+					if(field>0) completedItems[i++] = {"type":"field","points":field,"completed":gameOver};
+                }
+                var total = town + road + monastery + field;
+                //alert("Total: " + total);
+				console.log("Total points for player with id:'" + currentPlayerId + "': " + total);				
+				console.log("Completed items: " + JSON.stringify(completedItems));
+                addPoints(total,completedItems);
+				$.mobile.changePage("#playersPage");
+				updatePlayersList();
+				resetCheckBox();
+            }
+
+			function resetCheckBox(){
+				console.log("Resetting checkboxes");
+				$("#itemsContent input[type='checkbox']").attr("checked",false).checkboxradio("refresh").trigger('create');
+			}
+			
+			function resetAllCheckBox(){
+				console.log("Resetting all checkboxes");
+				$("input[type='checkbox']").attr("checked",false).checkboxradio("refresh").trigger('create');
+			}
+			
+			function getTextboxValueAndClear(id) {
+				var value = $('#' + id).val();
+				$('#' + id).val("");
+				return value;
+			}
+			
+            function updatePlayersList() {
+				$("#playersList").empty();
+                var html = $("#playerTemplate").render(playersList);
+                $("#playersList").html(html);
+                $("#playersList").listview("refresh").trigger("create");
+            }
+
+            function selectPlayer(id) {
+				if (gameStarted) {
+					currentPlayerId = id;
+					$.mobile.changePage("#selectItemsPage");
+				}
+            }
+
+            function addPoints(points, completedItems) {
+                var player = $.grep(playersList,function(item){return item.id===currentPlayerId;});
+				if(player.length == 0) {
+					console.error("Uneble to find player by Id:'" + currentPlayerId + "' in th list: " + JSON.stringify(playersList));
+				}
+				else {
+					console.log("Adding '" + points + "' points for player: " + currentPlayerId);
+					player[0].points += points;
+					player[0].history[player[0].history.length] = completedItems;
+					var lastTurn = "";
+					completedItems.forEach(function(item) {lastTurn += item.type + " (" + item.points + "), "});
+					lastTurn = lastTurn==="" ? "" : lastTurn.substring(0, lastTurn.length - 2) + '.';
+					player[0].lastTurn = lastTurn;
+				}				
+            }
+			
+			function resetActivePageHeight() {
+				var aPage = $( "." + $.mobile.activePageClass ),
+				aPagePadT = parseFloat( aPage.css( "padding-top" ) ),
+				aPagePadB = parseFloat( aPage.css( "padding-bottom" ) ),
+				aPageBorderT = parseFloat( aPage.css( "border-top-width" ) ),
+				aPageBorderB = parseFloat( aPage.css( "border-bottom-width" ) );
+				aPage.css( "min-height", deviceInfo.height - aPagePadT - aPagePadB - aPageBorderT - aPageBorderB ).css("top","0px").css("padding","0px");
+			}
+			
+			//hide footer when input box is on focus
+			//$(document).on('focus', 'input, textarea', function() {
+				//$("div[data-role=footer]").hide();
+				//resetActivePageHeight();
+			//});
+			
+			//show footer when input is NOT on focus
+			//$(document).on('blur', 'input, textarea', function() {
+				//$("div[data-role=footer]").show();
+				//resetActivePageHeight();
+			//});
+        </script>
+
+        <title>Carcassone Counter</title>
     </head>
     <body>
-        <div class="app">
-            <h1>Apache Cordova</h1>
-            <div id="deviceready" class="blink">
-                <p class="event listening">Connecting to Device</p>
-                <p class="event received">Device is Ready</p>
+	
+		<div data-role="page" id="playersPage">
+            <div data-role="header" data-position="fixed" id="headerPlayersPage" >
+                <h1>Players</h1>
+            </div>
+            <div data-role="content" data-theme="f" style="border-left-width: 0px; border-right-width: 0px;">
+                <script type="text/javascript" charset="utf-8">
+                    $('#playersPage').bind('pageinit', updatePlayersList);
+                </script>
+                <ul data-role="listview" data-devider-theme="a" id="playersList">
+                    
+                </ul>
+				<script id="playerTemplate" type="text/x-jsrender">
+                    <li><a  href="#" onclick="selectPlayer('{{:id}}')" style="border-bottom-color:#2C3E50;border-top-color:#2C3E50;border:2px 0px 2px 0px; background-color:{{:color}}">
+                        <div style="float:left">
+                            <span style="font-weight:bold">{{:name}}</span><br/>
+                            <span style="font-style:italic; font-family:Arial">{{:points}}</span>
+                        </div>
+						<div style="float:right">
+							<span style="font-weight:bold">Last turn:</span><br/>
+                            <span style="font-style:italic; font-family:Arial">{{:lastTurn}}</span>
+						</div>
+                    </a></li>
+                </script>
+            </div>
+			<div data-role="footer" data-position="fixed">                
+				<div id="newGame" style="display:none">
+					<a href="#conformNewGamePopup"  data-rel="popup" style="display:block;margin:6px 3px" data-inline="false" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-b ui-corner-all ui-shadow">New game</a>          
+				</div>
+				
+				<div data-role="popup" id="conformNewGamePopup" data-overlay-theme="a data-theme="a" data-dismissible="false">
+				    <div role="main" class="ui-content">
+				        <span>Are you sure you want to create new game?</span>
+						<fieldset class="ui-grid-a">
+							<div class="ui-block-a">
+						        <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-b" data-rel="back">No</a>
+							</div>
+							<div class="ui-block-b">
+						        <a href="#" class="ui-btn ui-corner-all ui-shadow ui-btn-b" data-rel="back" data-transition="flow" onclick="newGame()">Yes</a>
+							</div>
+						</fieldset>
+				    </div>
+				</div>
+                <div id="setupNewGame">
+					<fieldset class="ui-grid-a">
+                        <div class="ui-block-a">
+							<a href="#addPlayerPopup" id="addPlayerButton" data-rel="popup" style="display:block" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-e ui-corner-all">Add player</a>
+						</div>
+						<div class="ui-block-b">
+							<button data-theme="g" onclick="startGame()" style="display:block;margin:6px 3px 6px 3px">Start Game</button>					
+						</div>
+						
+						<div data-role="popup" id="addPlayerPopup" data-theme="a" "data-overlay-theme="c" style="background-color:#DDD" class="ui-corner-all">
+							<div style="padding:0px 10px;">
+							    <label style="font-weight:bold;">Player name:
+							    <input type="text" name="user" id="un" value="" placeholder="player name"></label>
+							    <a href="#" data-rel="back" type="submit" onclick="addPlayer()" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Add</a>
+							</div>
+						</div>
+					</fieldset>
+                </div>
+            </div>
+        </div>
+		
+        <div data-role="page" id="selectItemsPage">
+            <script type="text/javascript" charset="utf-8">
+            	$('#selectItemsPage').bind('pageinit', function() {items.forEach(toggleItem);})
+            </script>
+            <div data-role="header" data-position="fixed" id="header">
+            	<h1>Select items</h1>
+            </div>
+            <div data-role="content" data-theme="f" id="itemsContent">
+                <ul data-role="listview" data-devider-theme="a">
+                    <li data-role="list-divider" onclick="toggleItem('town')">Town</li>
+                    <li class="town">
+                        <fieldset class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <label>Tiles count:<input type="number" data-clear-btn="false" pattern="[0-9]*" id="tilescount-t" value=""></label>
+                            </div>
+                            <div class="ui-block-b">
+                                <label>Shields count:<input type="number" data-clear-btn="false" pattern="[0-9]*" id="shieldscount-t" value=""></label>
+                            </div>
+                        </fieldset>
+                        <div class="gameInProgress">
+                            <input type="checkbox" id="withcathedral" value="other">
+                            <label for="withcathedral">With cathedral</label>
+                        </div>
+                    </li>
+                    <li data-role="list-divider" onclick="toggleItem('road')">Road</li>
+                    <li class="road">
+                        <div>
+                            <label>Tiles count:<input type="number" data-clear-btn="false" pattern="[0-9]*" id="tilescount-r" value=""></label>
+                        </div>
+                        <div class="gameInProgress">
+                            <label><input type="checkbox" id="withlake" value="other">With inn</label>
+                        </div>
+                    </li>
+                    <li data-role="list-divider" onclick="toggleItem('monastery')">Monastery</li>
+                    <li class="monastery">
+                        <div id="tilescount-m-d">
+                            <label class="gameOver" style="display: none;">Tiles count:<input type="number" data-clear-btn="false" pattern="[0-9]*" id="tilescount-m" value=""></label>
+                        </div>
+                        <div class="gameInProgress">
+                            <label>Completed<input type="checkbox" id="completed-m" value="other"></label>
+                        </div>
+                    </li>
+                    <li class="gameOver" style="display: none;" data-role="list-divider" onclick="toggleItem('field')">Field</li>
+                    <li class="field" id="fields" style="display: none;">
+                        <div id="townscount-f-d">
+                            <label>Towns count:<input type="number" data-clear-btn="false" pattern="[0-9]*" id="townscount-f" value=""></label>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div data-role="footer" data-position="fixed" id="itemsFooter">
+                <div style="float:left;">
+                    <label for="gameovercheckbox">Game over</label>
+                    <input type="checkbox" name="gameover" id="gameovercheckbox" onclick="changeMode()">
+                </div>
+                <div>
+                    <button data-theme="b" onclick="calculate()" style="margin:6px 3px">Submit</button>
+                </div>
             </div>
         </div>
         <script type="text/javascript" src="cordova.js"></script>
-        <script type="text/javascript" src="js/index.js"></script>
     </body>
 </html>
