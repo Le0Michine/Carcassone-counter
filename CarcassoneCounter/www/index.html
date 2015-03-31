@@ -35,6 +35,8 @@
             var gameOver = false;
             var gameStarted = false;
 
+            var gameLog = [];
+
             onLoad();
              // Wait for Cordova to load
              //
@@ -85,7 +87,8 @@
                     });
                     console.debug('Available colors: ' + JSON.stringify(availableColors));
                     var colorIndex = Math.floor(Math.random() * availableColors.length);
-                    playersList[i] = {"id":id,"name":name==="" ? id.replace("p","P") : name,"points":0,"history":[],"lastTurn":"","color":availableColors[colorIndex]};
+                    playersList[i] = {"id":id,"name":name==="" ? id.replace("p","P") : name,"points":0,"history":[""],"lastTurn":"","color":availableColors[colorIndex]};
+                    gameLog[gameLog.length] = {"player":JSON.parse(JSON.stringify(playersList[i])), "completedItems":null};
                     updatePlayersList();
 //                    startGame();
                 }
@@ -148,9 +151,14 @@
                 console.log("Total points for player with id:'" + currentPlayerId + "': " + total);
                 console.log("Completed items: " + JSON.stringify(completedItems));
                 addPoints(total,completedItems);
+                gameLog[gameLog.length] = {"player":JSON.parse(JSON.stringify(getCurrentPlayer())),"completedItems":JSON.parse(JSON.stringify(completedItems))};
                 $.mobile.changePage("#playersPage");
                 updatePlayersList();
                 resetCheckBox();
+            }
+
+            function cloneObject(object) {
+                return JSON.parse(JSON.stringify(object));
             }
 
             function resetCheckBox(){
@@ -182,6 +190,24 @@
 
             function doNothing() {
                 console.log("Do nothing...");
+            }
+
+            function undo() {
+                console.log("Undoing last turn...");
+                if(gameLog.length < 1) {
+                    console.log("Nothing to undo");
+                    return;
+                }
+                var lastTurn = gameLog[gameLog.length - 1];
+                gameLog = gameLog.splice(0, gameLog.length - 1);
+                var filteredLog = $.grep(gameLog, function(turn) {return turn.player.name === lastTurn.player.name;});
+                var player = filteredLog[filteredLog.length - 1].player;
+                for (var i=0; i<playersList.length; i++) {
+                    if (playersList[i].id === player.id) {
+                        playersList[i] = cloneObject(player);
+                    }
+                }
+                updatePlayersList();
             }
 
             function selectPlayer(id) {
@@ -226,20 +252,34 @@
                 currentPlayerId = id;
             }
 
+            function getCurrentPlayer() {
+                return getPlayerById(currentPlayerId);
+            }
+
+            function getPlayerById(id) {
+                var player = $.grep(playersList,function(item){return item.id===id;});
+                return player[0];
+            }
+
             function addPoints(points, completedItems) {
                 var player = $.grep(playersList,function(item){return item.id===currentPlayerId;});
                 if(player.length == 0) {
-                    console.error("Uneble to find player by Id:'" + currentPlayerId + "' in th list: " + JSON.stringify(playersList));
+                    console.error("Unable to find player by Id:'" + currentPlayerId + "' in th list: " + JSON.stringify(playersList));
                 }
                 else {
                     console.log("Adding '" + points + "' points for player: " + currentPlayerId);
                     player[0].points += points;
                     player[0].history[player[0].history.length] = completedItems;
-                    var lastTurn = "";
-                    completedItems.forEach(function(item) {lastTurn += item.type + " (" + item.points + "), "});
-                    lastTurn = lastTurn==="" ? "" : lastTurn.substring(0, lastTurn.length - 2) + '.';
+                    var lastTurn = completedItemsToString(completedItems);
                     player[0].lastTurn = lastTurn;
                 }
+            }
+
+            function completedItemsToString(completedItems) {
+                var lastTurn = "";
+                completedItems.forEach(function(item) {lastTurn += item.type + " (" + item.points + "), "});
+                lastTurn = lastTurn==="" ? "" : lastTurn.substring(0, lastTurn.length - 2) + '.';
+                return lastTurn;
             }
 
             //hide footer when input box is on focus
@@ -310,9 +350,14 @@
                 </div>
             </div>
             <div data-role="footer" data-position="fixed">
-                <div id="newGame" style="display:none">
-                    <a href="#conformNewGamePopup"  data-rel="popup" style="display:block;margin:6px 3px" data-inline="false" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-b ui-corner-all ui-shadow">New game</a>
-                </div>
+                <fieldset class="ui-grid-a" id="newGame" style="display:none">
+                    <div class="ui-block-a" style="padding-right: 3px">
+                        <button data-theme="g" onclick="undo()" style="display:block;margin:6px 3px 6px 3px">Undo</button>
+                    </div>
+                    <div class="ui-block-b" style="padding-left: 3px">
+                        <a href="#conformNewGamePopup"  data-rel="popup" style="display:block;margin:6px 3px 6px 3px" data-inline="false" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-b ui-corner-all ui-shadow">New game</a>
+                    </div>
+                </fieldset>
 
                 <div data-role="popup" id="conformNewGamePopup" data-overlay-theme="a" data-theme="a" data-dismissible="false">
                     <div role="main" class="ui-content">
@@ -332,7 +377,7 @@
                         <div class="ui-block-a">
                             <a href="#addPlayerPopup" id="addPlayerButton" data-rel="popup" style="display:block" data-position-to="window" data-transition="pop" class="ui-btn ui-btn-e ui-corner-all">Add player</a>
                         </div>
-                        <div class="ui-block-b">
+                        <div class="ui-block-b" style="padding-right: 6px">
                             <button data-theme="g" onclick="startGame()" style="display:block;margin:6px 3px 6px 3px">Start Game</button>
                         </div>
                     </fieldset>
@@ -344,7 +389,7 @@
                         </div>
                     </div><!--/popup-->
                 </div>
-            </div>
+            </div><!--/footer-->
         </div>
 
         <div data-role="page" id="selectItemsPage">
