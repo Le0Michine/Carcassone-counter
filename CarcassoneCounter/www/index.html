@@ -55,7 +55,7 @@
 
             function newGame() {
                 playersList = [];
-                var gameOver = false;
+                gameOver = false;
                 updatePlayersList();
                 $('#newGame').hide();
                 $('#setupNewGame').fadeIn();
@@ -76,8 +76,8 @@
             function addPlayer() {
                 if(playersList.length!=maxPlayers) {
                     var i = playersList.length;
-                    var name = $("#un").val();
-                    $("#un").val("");
+                    var name = $("#playerNameTextBox").val();
+                    $("#playerNameTextBox").val("");
                     var id = "player" + (i + 1);
                     var usedColors = [];
                     playersList.forEach(function(player) {usedColors[usedColors.length] = player.color;});
@@ -384,7 +384,7 @@
 
                     <div data-role="popup" id="addPlayerPopup" data-theme="a" data-overlay-theme="c" style="background-color:#DDD" class="ui-corner-all">
                         <div style="padding:0px 10px;">
-                            <label style="font-weight:bold;">Player name:<input type="text" name="user" id="un" value="" placeholder="player name"></label>
+                            <label style="font-weight:bold;">Player name:<input type="text" name="user" id="playerNameTextBox" value="" placeholder="player name"></label>
                             <a href="#" data-rel="back" type="submit" onclick="addPlayer()" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Add</a>
                         </div>
                     </div><!--/popup-->
