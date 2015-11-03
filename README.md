@@ -7,6 +7,22 @@ Features:
 * Included cathedrals and inns
 * Ability to undo last turn
 
-![](./2015-11-03%2020.06.57.png)
-![](./2015-11-03%2020.07.21.png)
-![](./2015-11-03%2020.07.29.png)
+<table>
+
+<tr>
+
+<td>
+<img src="./2015-11-03%2020.06.57.png" />
+</td>
+
+<td>
+<img src="./2015-11-03%2020.07.21.png" />
+</td>
+
+<td>
+<img src="./2015-11-03%2020.07.29.png" />
+</td>
+
+</tr>
+
+</table>
